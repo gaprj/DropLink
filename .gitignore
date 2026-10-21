@@ -1,0 +1,15 @@
+.vs/
+.idea/
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+*.user
+*.suo
+*.log
+# Local deployment config can contain the operator's domain.
+deployment/caddy/Caddyfile
+
+# Optional zrok2 client, downloaded separately from its official source.
+tools/zrok2.exe
+src/DropLink/zrok2.exe

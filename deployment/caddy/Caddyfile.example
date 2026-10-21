@@ -1,0 +1,7 @@
+# Rename this file to Caddyfile and replace share.example.com with your real domain.
+# Caddy obtains and renews a public TLS certificate automatically when DNS and
+# inbound TCP ports 80/443 are correctly configured.
+share.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:43821
+}
