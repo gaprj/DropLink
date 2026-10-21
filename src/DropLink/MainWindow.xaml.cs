@@ -42,7 +42,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         _settings = _settingsService.Load();
-        _settings.Language = LocalizationService.Languages.Any(language => language.Code == _settings.Language) ? _settings.Language : "it";
+        _settings.Language = LocalizationService.Languages.Any(language => language.Code == _settings.Language) ? _settings.Language : "en";
         _settings.PublicHost ??= string.Empty;
         if (!string.IsNullOrWhiteSpace(_settings.PublicHost))
         {

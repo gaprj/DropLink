@@ -1,33 +1,30 @@
 # Test status and verification procedure
 
-## Tests included in the repository
+## Automated coverage
 
-- Token format, length and uniqueness.
-- Revocation and token lookup.
-- Valid single byte ranges, suffix ranges and invalid/multipart ranges.
-- Hostname validation and public-domain URL creation.
-- Local HTTP integration: download page, `HEAD`, full download, `Range` response and revocation.
+The test project covers token format and uniqueness, revocation and lookup, byte-range parsing, hostname validation, public-domain URL construction, and local HTTP integration (`HEAD`, full downloads, `Range` responses and revocation).
 
-## Tests not yet run by the authoring environment
-
-The authoring container does not have the .NET SDK installed and cannot resolve the SDK download host. Therefore this source package has **not** been compiled or executed here, and no results are claimed for the native Windows build. The Windows GitHub Actions workflow is included to perform restore, test and publish after the repository is pushed.
+The repository's Windows GitHub Actions workflow restores dependencies, runs the test suite, publishes a self-contained Windows x64 application and uploads the build as an artifact. The maintainer has also confirmed 30 tests passing and a successful Release build on Windows for version 0.4.7. Re-run tests after applying changes to the source or workflow.
 
 ## Run locally on Windows 11
+
+Requirements: the .NET 10 SDK and network access to the official NuGet feed.
 
 ```powershell
 dotnet restore .\tests\DropLink.Tests\DropLink.Tests.csproj
 dotnet test .\tests\DropLink.Tests\DropLink.Tests.csproj -c Release
+dotnet build .\src\DropLink\DropLink.csproj -c Release
 dotnet run --project .\src\DropLink\DropLink.csproj
 ```
 
-## Manual tests required before a public release
+## Manual acceptance tests before a public release
 
-1. Build and launch the native app on Windows 11.
+1. Build and launch the native app on a clean Windows 11 profile.
 2. Share a harmless text file and download it from the same PC.
-3. Download the same file from another device on the same Wi-Fi.
-4. Validate large files and a resumable Range download.
-5. Revoke a share during a transfer and confirm the connection stops.
-6. Test host DNS resolution; separately test TCP reachability from mobile data without Wi-Fi.
-7. Click the temporary Internet tunnel button on a clean Windows profile. Verify `zrok2.exe` is downloaded to `%LOCALAPPDATA%\DropLink\tools`, the official release checksum is validated, and the app shows the one-time authorization dialog instead of requiring PowerShell/manual installation.
-8. With a test account token, verify the app authorizes zrok, resumes the tunnel automatically, and rewrites currently listed share URLs to the public HTTPS hostname. Stop the tunnel and confirm local URLs are restored; then verify the public URL fails as expected. Never use a personal production token for tests in logs or screenshots.
-9. Test the public URL from a phone with Wi-Fi disabled. The authoring environment has not run the Windows build or a real external connectivity test.
+3. Download the file from another device on the same local network.
+4. Test large files and a byte-range/resume download.
+5. Revoke a share during a transfer and confirm access is stopped.
+6. Test DNS resolution; separately test public TCP reachability from mobile data with Wi-Fi disabled for custom-domain mode.
+7. On a clean Windows profile, activate the temporary Internet tunnel and verify that `zrok2.exe` is downloaded to `%LOCALAPPDATA%\DropLink\tools` and its official release checksum is validated.
+8. Complete the one-time zrok account setup with a test account, confirm the tunnel starts and existing share URLs change to the public HTTPS hostname, then stop the tunnel and confirm public access ends.
+9. Download a file from a phone using mobile data. Never capture or publish a personal token, private path or private share URL in logs or screenshots.

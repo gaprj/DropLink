@@ -1,37 +1,46 @@
 # Publishing DropLink on GitHub
 
-This project contains source code and no prebuilt application binary. Before pushing, review staged files and confirm that no personal zrok token, `zrok2.exe`, local Caddy configuration, generated build output, or private screenshots have been added. The `.gitignore` excludes local build output, the optional zrok executable, and `deployment/caddy/Caddyfile`.
+The repository is public at <https://github.com/gaprj/DropLink>. Source code is stored in Git; compiled output, local settings and personal service credentials must not be committed. The `.gitignore` excludes build output and local zrok/Caddy files.
 
-## Create the repository
+## Protect your commit email
 
-1. Sign in to GitHub and open <https://github.com/new>.
-2. Create a repository named `DropLink-Native` (or another available name). Choose **Public** only if you intend to publish the source openly; otherwise choose **Private**.
-3. Do not initialize it with a README, license, or `.gitignore`: those files are already included here.
-
-## Push from PowerShell
-
-Run these commands from the extracted `DropLink_Native` project directory after creating the empty remote repository. Replace the remote URL with the URL GitHub displays for your repository.
+To use GitHub's private no-reply address for future local commits, run:
 
 ```powershell
-git init -b main
+git config --global user.email "85964899+gaprj@users.noreply.github.com"
+```
+
+This changes future commits only. It does not rewrite email addresses already recorded in public Git history.
+
+## Review and push changes
+
+From the repository root, review all staged files before committing:
+
+```powershell
+git status --short
+git diff --check
+git diff --cached --check
+```
+
+Do not commit zrok account tokens, `zrok2.exe`, local Caddy configuration, settings files, private screenshots, personal files or real share URLs. If a tool or build downloads `zrok2.exe`, keep it under `%LOCALAPPDATA%\DropLink\tools`, not in the repository.
+
+After staging the intended source/documentation changes:
+
+```powershell
 git add .
 git status --short
-# Review the staged file list and confirm it contains no secrets or local configuration.
-git commit -m "Release DropLink 0.4.7"
-git remote add origin https://github.com/<YOUR-USER>/DropLink-Native.git
-git push -u origin main
+git diff --cached --check
+git commit -m "Prepare DropLink 0.4.8"
+git push
 ```
 
-Git Credential Manager or GitHub's sign-in prompt should handle authentication; do not paste an access token into source files or commit it. The existing GitHub Actions workflow at `.github/workflows/windows-build.yml` runs the tests and publishes a self-contained win-x64 artifact.
+## Publish a Windows executable Release
 
-## Validate before release
-
-On Windows 11 with the .NET 10 SDK:
+The Windows workflow runs tests, publishes a self-contained `win-x64` build and uploads it as an Actions artifact on each push. When the tag-based release job is present on the branch, pushing a version tag triggers a GitHub Release and attaches `DropLink.exe`:
 
 ```powershell
-dotnet restore .\tests\DropLink.Tests\DropLink.Tests.csproj
-dotnet test .\tests\DropLink.Tests\DropLink.Tests.csproj -c Release
-dotnet build .\src\DropLink\DropLink.csproj -c Release
+git tag v0.4.8
+git push origin v0.4.8
 ```
 
-The source archive does not include a prebuilt `DropLink.exe`. Check both the local Windows build and the GitHub Actions result before publishing a release binary.
+Wait for the **Windows build and tests** workflow to finish successfully, then open <https://github.com/gaprj/DropLink/releases> and verify that the release contains `DropLink.exe`. Do not call a release ready if tests or publishing fail. For a future release, bump the version in `src/DropLink/DropLink.csproj` and update this changelog before tagging.

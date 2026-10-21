@@ -1,80 +1,43 @@
-# DropLink Native
+# DropLink
 
-DropLink Native is a Windows desktop file-sharing application built with **WPF and .NET 10**. The desktop interface uses native Windows controls and contains no WebView. The recipient's browser displays a download page; file bytes are streamed from the sender's PC.
-
-> **Version 0.4.7 — native in-app operation feedback.** This archive contains source code and scripts, not a compiled `DropLink.exe`. Build and test on Windows before relying on it. DropLink automatically downloads the official `zrok2` client on first use, verifies its SHA-256 checksum, and handles first-time account authorization in a native window.
-
-### New in 0.4.7
-
-- Removed the decorative arrow in the lower-right corner of the sharing hero artwork.
-- Added native WPF in-app toast feedback for copying, creating/revoking shares, opening links, saving settings, DNS checks, and starting/stopping the temporary Internet tunnel.
-- Routine failures now appear as in-app feedback; confirmation and first-time account setup dialogs remain modal where user input is required.
-- Added GitHub publishing instructions; the existing Windows workflow already runs tests and publishes a win-x64 artifact.
-
-### New in 0.4.6
-
-- Recognizes zrok public hostnames printed without `https://` and endpoints embedded in JSON logs, normalizing them to HTTPS.
-- Adds regression tests for HTTPS URLs, bare hostnames, JSON logs, and invalid domains.
-- Removes the technical footer from the Shares page.
-
-### New in 0.4.5
-
-- Detects the current zrok CLI message `unable to load environment; did you 'zrok2 enable'?` and opens the in-app authorization dialog instead of failing generically. Adds regression tests for this case.
-
-### New in 0.4.2
-
-- Automatic download and SHA-256 verification of the official `zrok2` client; no manual installation or PowerShell commands.
-- One-time account authorization through a native DropLink dialog; later sessions start the tunnel with one click.
-- Existing share links are updated when the public tunnel starts and reverted when it stops.
+DropLink is a native Windows desktop application for sharing individual files from your PC. It is built with **WPF and .NET 10** and uses native Windows controls rather than an embedded WebView. Recipients open a download page in their browser.
 
 ## Features
 
-- Native Windows desktop UI, no Tauri and no WebView.
-- Italian, English, Spanish, French, German, Portuguese, Chinese and Japanese.
-- Single-file shares with cryptographically random 128-bit tokens, copy/open/revoke actions.
-- Embedded Kestrel server streams file contents from the sender's PC without cloud storage. LAN transfers are direct; temporary Internet traffic is forwarded through the zrok tunnel.
-- `HEAD`, single byte-range requests, Unicode filenames and bounded 64 KiB streaming.
-- Local links use HTTP on the LAN. With a public hostname configured, new links use `https://` on port 443 through Caddy.
-- DNS-resolution check and PowerShell network diagnostic.
+- Native Windows desktop interface; no Tauri or WebView.
+- Interface translations for Italian, English, Spanish, French, German, Portuguese, Chinese and Japanese.
+- Share one selected file with a cryptographically random 128-bit link token; copy, open or revoke links at any time.
+- Embedded Kestrel server with streaming, `HEAD` support, single byte-range requests, Unicode filenames and a bounded 64 KiB buffer.
+- Direct transfers over a reachable local network without uploading files to persistent cloud storage.
+- Temporary public HTTPS links through the official `zrok2` client for networks behind NAT/CGNAT.
+- Optional custom-domain HTTPS setup through Caddy for networks that allow inbound connections.
+- DNS checks and a PowerShell network diagnostic script.
 
+## Temporary Internet sharing with zrok
 
-## Temporary Internet sharing (zrok2)
+DropLink can create a temporary HTTPS link without router port forwarding. Public traffic passes through the zrok tunnel, so it is not guaranteed to be as fast as a direct LAN transfer and is subject to the provider's current quotas and terms.
 
-To create a temporary HTTPS URL that can work behind CGNAT without router port forwarding:
+1. Click **Start temporary Internet link** in DropLink.
+2. On first use, DropLink downloads the official Windows x64 `zrok2` client and verifies its SHA-256 checksum.
+3. Create or sign in to your own account at <https://myzrok.io/>. Copy your personal account token and enter it in DropLink's native setup window. This authorization is normally required only once per Windows user profile.
+4. DropLink starts the tunnel and updates the share links to use the public HTTPS address. Send the displayed link to the recipient.
+5. Keep DropLink open until the recipient has downloaded the file. Stopping the tunnel or closing the app ends public access.
 
-1. Start DropLink and click **Start temporary Internet link**. On first use, DropLink downloads the official Windows zrok client from GitHub and verifies its SHA-256 checksum. No manual `zrok2` installation is needed.
-2. The first run opens a native setup dialog. Create or sign in to a free account at <https://myzrok.io/>, copy your personal account token from the account page, and paste it into DropLink. The app performs the authorization; no PowerShell commands are needed.
-3. After authorization, the button starts the temporary HTTPS tunnel. Existing shares are updated to use the public URL; copy the displayed link and send it to the recipient.
-4. Keep DropLink open while the recipient downloads the file. Click **Stop Internet link** or close the app to end the tunnel.
+Never commit or share your zrok account token. Each user must authorize their own account; the public repository does not include a shared credential. The file remains on the sender's PC, while public requests travel through zrok. Check the provider's current limits at <https://zrok.io/pricing/>.
 
-The account token is personal. Do not commit it to GitHub or share it with others. DropLink does not store it in its own files; zrok stores its configuration in the current Windows user profile. Each user must authorize their own account because the hosted service requires it; the public source repository does not include shared credentials.
+## Custom domain and public HTTPS with Caddy
 
-File bytes are still read from the sender's PC, but public traffic passes through zrok, so this is a tunnel rather than a guaranteed direct connection. Latency, throughput, quotas and a provider interstitial may apply; see <https://zrok.io/pricing/> for current terms. Details are in `docs/TEMPORARY_INTERNET_SHARING.md`.
+For networks that allow inbound access, DropLink can also use a domain you control with Caddy as a reverse proxy. Caddy handles public TLS on TCP 443 and redirects HTTP on TCP 80, then forwards requests to DropLink's local server (default port `43821`).
 
-## Public HTTPS setup
+This option requires a public DNS record or DDNS, valid inbound network access, Windows Firewall rules and router port forwarding for TCP 80/443. **Do not expose DropLink's internal port directly to the Internet.** CGNAT can prevent conventional port forwarding; use the temporary zrok tunnel instead when direct inbound access is unavailable.
 
-DropLink's embedded server uses HTTP on its local port (default `43821`). Caddy terminates TLS on TCP 443, redirects HTTP from TCP 80 to HTTPS, and proxies requests to DropLink on the same PC. File bytes still come directly from the sender's computer.
+Detailed instructions are in [docs/NETWORKING.md](docs/NETWORKING.md).
 
-1. Own a public domain/subdomain and point its DNS `A`/`AAAA` record or DDNS hostname to your Internet connection.
-2. Run `.\tools\Test-DropLinkNetwork.ps1` to show the public IP and local network information. Compare the detected public IPv4 with the router's WAN IPv4. Private/shared WAN addresses or mismatches may indicate double NAT or CGNAT; the diagnostic cannot prove reachability.
-3. Install Caddy from the [official download page](https://caddyserver.com/download). Put `caddy.exe` in `PATH` or in `deployment/caddy/`.
-4. Open PowerShell **as Administrator** and run `.\deployment\caddy\Enable-CaddyFirewall.ps1`.
-5. Forward router TCP 80 to this PC's TCP 80 and TCP 443 to this PC's TCP 443. Do **not** forward DropLink's internal port (default `43821`) directly to the Internet.
-6. Start DropLink, then run from the repository root:
+## Build and test
 
-   ```powershell
-   .\deployment\caddy\Start-PublicHttps.ps1 -Domain "share.example.com" -ServerPort 43821
-   ```
+Requirements: Windows 11 x64 and the .NET 10 SDK. Download it from <https://dotnet.microsoft.com/download/dotnet/10.0>. Test dependencies use the official nuget.org feed.
 
-   Replace the example host and keep Caddy running while sharing. Caddy can provision and renew a public certificate automatically when DNS and ports are reachable; see <https://caddyserver.com/docs/automatic-https>.
-7. In DropLink Settings, enter the same hostname and save, then create new shares. Public links look like `https://share.example.com/s/<token>`. Existing shares keep the URL they had when created.
-8. Test from a phone with Wi-Fi disabled. DNS resolution alone does not prove router forwarding or public reachability.
-
-If the ISP uses CGNAT and cannot provide inbound connectivity, normal port forwarding will not work. Ask for a public IPv4 or suitable IPv6 access. A VPS tunnel or relay changes the network path and is not a strictly direct transfer.
-
-## Build and tests
-
-Requirements: Windows 11 x64 and .NET 10 SDK (<https://dotnet.microsoft.com/download/dotnet/10.0>). Test packages use the official nuget.org feed.
+Run from the repository root:
 
 ```powershell
 dotnet restore .\tests\DropLink.Tests\DropLink.Tests.csproj
@@ -82,14 +45,24 @@ dotnet test .\tests\DropLink.Tests\DropLink.Tests.csproj -c Release
 dotnet run --project .\src\DropLink\DropLink.csproj
 ```
 
-Publish a self-contained Windows x64 build:
+To create a self-contained Windows x64 build:
 
 ```powershell
 dotnet publish .\src\DropLink\DropLink.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\artifacts\win-x64
 ```
 
-The archive contains source, not a prebuilt executable. Review `docs/NETWORKING.md` and `docs/SECURITY.md` before public use.
+The source repository does not store a compiled executable. Tagged builds are configured to publish `DropLink.exe` as a GitHub Release asset; see [Releases](https://github.com/gaprj/DropLink/releases).
+
+## Security and limitations
+
+- A share URL is a bearer link: anyone who has it can download the associated file until the share is revoked or DropLink/the tunnel is stopped.
+- Local LAN links use HTTP and are not encrypted. Do not use them for confidential files on untrusted networks.
+- Internet sharing through zrok uses a service-mediated tunnel and may add latency or throughput overhead; availability and quotas depend on the provider.
+- Custom-domain public HTTPS requires valid DNS, a trusted certificate, inbound access and correct firewall/router configuration.
+- Password protection, automatic link expiry, download-count limits and persistent transfer history are not implemented.
+
+See [docs/SECURITY.md](docs/SECURITY.md), [docs/TEMPORARY_INTERNET_SHARING.md](docs/TEMPORARY_INTERNET_SHARING.md) and [docs/TESTING.md](docs/TESTING.md) before public use.
 
 ## License
 
-MIT. See `LICENSE`.
+DropLink is distributed under the MIT License. See [LICENSE](LICENSE).

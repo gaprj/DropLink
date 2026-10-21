@@ -16,11 +16,11 @@ public static class LocalizationService
         new LanguageOption("ja", "日本語")
     };
 
-    private static string _language = "it";
+    private static string _language = "en";
     public static string Language
     {
         get => _language;
-        set => _language = value is not null && Translations.ContainsKey(value) ? value : "it";
+        set => _language = value is not null && Translations.ContainsKey(value) ? value : "en";
     }
 
     public static string Get(string key) =>
